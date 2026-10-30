@@ -40,7 +40,7 @@ Takeover (timed levels, cash, unlockable vehicles, drivers with bonuses, online 
 
 ## Technical choices
 
-- **Unreal Engine 5.5, C++ with room for Blueprints.** The rules, car and city are C++ so they
+- **Unreal Engine 5.8, C++ with room for Blueprints.** The rules, car and city are C++ so they
   can be written and reviewed as text. Every tuning number is exposed so a Blueprint child can
   change it in the editor.
 - **Arcade car, not Chaos Vehicles.** A simple steering model that moves the car with sweeps
