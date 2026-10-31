@@ -432,10 +432,10 @@ void ACityBlockBuilder::AddBus(int32 StreetIndex, float S, bool bMoving, FRandom
 		Rng.FRandRange(4.f, 7.f), Rng.FRandRange(4.f, 6.f), Rng.FRandRange(1.f, 5.f), false, Yaw, TEXT("Bus"));
 
 	const FRotator Flat = FRotator::ZeroRotator;
-	CityShapes::Add(Bus, Bus->Box, CityShapes::Cube(), FVector(0, 0, 0), FVector(1200, 260, 280), Flat, FLinearColor(0.85f, 0.86f, 0.88f), EShapeCollision::None);
-	CityShapes::Add(Bus, Bus->Box, CityShapes::Cube(), FVector(0, 0, 40), FVector(1160, 264, 70), Flat, FLinearColor(0.03f, 0.05f, 0.08f), EShapeCollision::None);
-	CityShapes::Add(Bus, Bus->Box, CityShapes::Cube(), FVector(0, 0, -60), FVector(1204, 264, 25), Flat, FLinearColor(0.05f, 0.25f, 0.7f), EShapeCollision::None);
-	CityShapes::Add(Bus, Bus->Box, CityShapes::Cube(), FVector(598, 0, 110), FVector(8, 160, 30), Flat, FLinearColor(1.f, 0.6f, 0.f), EShapeCollision::None);
+	CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(0, 0, 0), FVector(1200, 260, 280), Flat, FLinearColor(0.85f, 0.86f, 0.88f), EShapeCollision::None);
+	CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(0, 0, 40), FVector(1160, 264, 70), Flat, FLinearColor(0.03f, 0.05f, 0.08f), EShapeCollision::None);
+	CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(0, 0, -60), FVector(1204, 264, 25), Flat, FLinearColor(0.05f, 0.25f, 0.7f), EShapeCollision::None);
+	CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(598, 0, 110), FVector(8, 160, 30), Flat, FLinearColor(1.f, 0.6f, 0.f), EShapeCollision::None);
 
 	// Bus stop sign and shelter on the sidewalk.
 	const FVector Stop = St.ToWorld(S + 400.f, -(CurbT + 90.f), 15.f);
@@ -460,9 +460,9 @@ void ACityBlockBuilder::AddPedestrian(const FVector& From, const FVector& To, FR
 	};
 	const FLinearColor Shirt = Clothes[Rng.RandRange(0, (int32)UE_ARRAY_COUNT(Clothes) - 1)];
 	const FLinearColor Skin = FLinearColor::LerpUsingHSV(FLinearColor(0.95f, 0.75f, 0.6f), FLinearColor(0.25f, 0.13f, 0.07f), Rng.FRand());
-	CityShapes::Add(Person, Person->Box, CityShapes::Cylinder(), FVector(0, 0, -55), FVector(36, 36, 70), FRotator::ZeroRotator, FLinearColor(0.08f, 0.08f, 0.15f), EShapeCollision::None);
-	CityShapes::Add(Person, Person->Box, CityShapes::Cylinder(), FVector(0, 0, 10), FVector(48, 48, 65), FRotator::ZeroRotator, Shirt, EShapeCollision::None);
-	CityShapes::Add(Person, Person->Box, CityShapes::Sphere(), FVector(0, 0, 62), FVector(30, 30, 32), FRotator::ZeroRotator, Skin, EShapeCollision::None);
+	CityShapes::Add(Person, Person->Box.Get(), CityShapes::Cylinder(), FVector(0, 0, -55), FVector(36, 36, 70), FRotator::ZeroRotator, FLinearColor(0.08f, 0.08f, 0.15f), EShapeCollision::None);
+	CityShapes::Add(Person, Person->Box.Get(), CityShapes::Cylinder(), FVector(0, 0, 10), FVector(48, 48, 65), FRotator::ZeroRotator, Shirt, EShapeCollision::None);
+	CityShapes::Add(Person, Person->Box.Get(), CityShapes::Sphere(), FVector(0, 0, 62), FVector(30, 30, 32), FRotator::ZeroRotator, Skin, EShapeCollision::None);
 }
 
 void ACityBlockBuilder::AddGarbagePile(const FVector& Pos, FRandomStream& Rng)
