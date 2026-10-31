@@ -272,12 +272,18 @@ void AParkingCar::Drive(float Dt)
 		FRotator NewRotation = GetActorRotation();
 		NewRotation.Yaw += DeltaYaw;
 
+		// A real car turns around its rear wheels: the back follows, the nose swings.
+		// Keep the rear axle where it is and swing the car around it.
+		const FVector HalfWheelbase(Wheelbase * 0.5f, 0.f, 0.f);
+		const FVector RearAxle = GetActorLocation() - GetActorRotation().RotateVector(HalfWheelbase);
+		const FVector NewLocation = RearAxle + NewRotation.RotateVector(HalfWheelbase);
+
 		// Only turn if the car would not end up inside something.
 		FCollisionQueryParams Params(SCENE_QUERY_STAT(ParkingCarTurn), false, this);
 		const FCollisionShape Shape = FCollisionShape::MakeBox(Body->GetScaledBoxExtent() - FVector(2.f));
-		if (!World->OverlapBlockingTestByChannel(GetActorLocation(), NewRotation.Quaternion(), ECC_Pawn, Shape, Params))
+		if (!World->OverlapBlockingTestByChannel(NewLocation, NewRotation.Quaternion(), ECC_Pawn, Shape, Params))
 		{
-			SetActorRotation(NewRotation);
+			SetActorLocationAndRotation(NewLocation, NewRotation);
 		}
 		else
 		{
