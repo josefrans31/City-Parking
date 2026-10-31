@@ -143,7 +143,7 @@ bool CityShapes::ApplySurface(UStaticMeshComponent* Component, const FCitySurfac
 
 	// The basic shapes stretch a texture once over each face, so ask the material to repeat it.
 	// Use the two biggest sides, which is the face you look at most.
-	TArray<float> Sides = { SizeCm.X, SizeCm.Y, SizeCm.Z };
+	TArray<float> Sides = { (float)SizeCm.X, (float)SizeCm.Y, (float)SizeCm.Z };
 	Sides.Sort([](float A, float B) { return A > B; });
 	const float Repeats = FMath::Max(1.f, (Sides[0] + Sides[1]) * 0.5f / FMath::Max(Surface.TileSizeCm, 10.f));
 
