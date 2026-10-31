@@ -5,6 +5,7 @@
 #include "ParkingCar.h"
 #include "ParkingSpot.h"
 
+#include "Components/BoxComponent.h"
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
 
