@@ -34,7 +34,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Driving") float CoastDeceleration = 250.f;
 	UPROPERTY(EditAnywhere, Category = "Driving") float HandbrakeDeceleration = 3200.f;
 	UPROPERTY(EditAnywhere, Category = "Driving") float Wheelbase = 270.f;
-	UPROPERTY(EditAnywhere, Category = "Driving") float MaxSteerAngle = 30.f;      // degrees
+	UPROPERTY(EditAnywhere, Category = "Driving") float MaxSteerAngle = 24.f;      // degrees. 24 gives about a 6 m turning circle radius, like a family car
 	UPROPERTY(EditAnywhere, Category = "Driving") float SteerSpeed = 0.9f;         // how fast the wheel turns (full lock per second)
 	// Tyre grip, in cm/s per second. At speed the steering is limited so the turn never needs more grip
 	// than this, like a real car. Lower = wider turns at speed. 600 is about 0.6 g.
