@@ -1,6 +1,6 @@
 # City Parking
 
-A 3D driving game made with **Unreal Engine 5**. You drive round a busy city block of one-way
+A 3D driving game made with **Unreal Engine 5.8**. You drive round a busy city block of one-way
 streets, squeeze past double-parked cars, buses pulling out, garbage bags and people on the
 crosswalks, and park in the one open space before the clock runs out.
 
@@ -10,8 +10,8 @@ you can swap in real models later.
 
 ## What you need (once)
 
-1. **Epic Games Launcher**, then install **Unreal Engine 5.5** from its Unreal Engine tab.
-   (5.4 or 5.6 also work: right-click `CityParking.uproject` and pick *Switch Unreal Engine version*.)
+1. **Epic Games Launcher**, then install **Unreal Engine 5.8** (the yellow *Install Engine* button in the Unreal Engine tab).
+   (Other 5.x versions should also work: right-click `CityParking.uproject` and pick *Switch Unreal Engine version*.)
 2. **Visual Studio 2022** (the free Community edition). When it asks what to install, tick
    **Game development with C++**. This is what turns the code into the game.
 
