@@ -66,6 +66,7 @@ private:
 	void BuildGroundAndBuildings(FRandomStream& Rng);
 	void BuildStreetPaint(const FCityStreet& Street);
 	void AddCar(const FVector& Pos, float Yaw, const FLinearColor& Color, float Length, float Width, bool bHazards);
+	void AddHazards(const FVector& Pos, const FRotator& R, float Length, float Width);
 	void AddBus(int32 StreetIndex, float S, bool bMoving, FRandomStream& Rng);
 	void AddPedestrian(const FVector& From, const FVector& To, FRandomStream& Rng);
 	void AddGarbagePile(const FVector& Pos, FRandomStream& Rng);

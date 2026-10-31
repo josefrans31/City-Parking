@@ -34,11 +34,11 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Driving") float CoastDeceleration = 250.f;
 	UPROPERTY(EditAnywhere, Category = "Driving") float HandbrakeDeceleration = 3200.f;
 	UPROPERTY(EditAnywhere, Category = "Driving") float Wheelbase = 270.f;
-	UPROPERTY(EditAnywhere, Category = "Driving") float MaxSteerAngle = 38.f;      // degrees
-	UPROPERTY(EditAnywhere, Category = "Driving") float SteerSpeed = 1.4f;         // how fast the wheel turns (full lock per second)
+	UPROPERTY(EditAnywhere, Category = "Driving") float MaxSteerAngle = 30.f;      // degrees
+	UPROPERTY(EditAnywhere, Category = "Driving") float SteerSpeed = 0.9f;         // how fast the wheel turns (full lock per second)
 	// Tyre grip, in cm/s per second. At speed the steering is limited so the turn never needs more grip
-	// than this, like a real car. Lower = wider turns at speed. 700 is about 0.7 g.
-	UPROPERTY(EditAnywhere, Category = "Driving") float MaxSideGrip = 700.f;
+	// than this, like a real car. Lower = wider turns at speed. 600 is about 0.6 g.
+	UPROPERTY(EditAnywhere, Category = "Driving") float MaxSideGrip = 600.f;
 	UPROPERTY(EditAnywhere, Category = "Driving") FLinearColor PaintColor = FLinearColor(0.75f, 0.05f, 0.04f);
 
 	static constexpr float CarLength = 450.f;
