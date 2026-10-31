@@ -74,8 +74,16 @@ Source/CityParking/
     MovingObstacle            anything that moves back and forth (people, buses pulling out)
     ParkingSpot               the green space: checks the car is inside, straight and stopped
     ParkingHUD                everything on screen: clock, score, arrow, mini map, end card
-    CityShapes                helper that makes coloured boxes, cylinders and spheres
+    CityShapes                helper that makes coloured boxes, cylinders and spheres,
+                              and fits real models and textures in their place
+    CityArtSettings           the City Parking Art page in Project Settings
 ```
+
+### Real cars and textures
+
+Swap the boxes for real low-poly cars, a bus, and Megascans textures from Fab, without code:
+see [docs/ADDING_REAL_ART.md](docs/ADDING_REAL_ART.md). You pick them in
+**Edit > Project Settings > Game > City Parking Art**.
 
 ### Changing things without code
 

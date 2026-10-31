@@ -1,5 +1,7 @@
 #include "ParkingCar.h"
 
+#include "CityArtSettings.h"
+
 #include "CityShapes.h"
 #include "ParkingGameMode.h"
 
@@ -89,6 +91,18 @@ void AParkingCar::BeginPlay()
 	for (UStaticMeshComponent* Wheel : Wheels)
 	{
 		CityShapes::Paint(Wheel, FLinearColor(0.02f, 0.02f, 0.02f));
+	}
+
+	// A real car model, if one is picked in Project Settings > City Parking Art. The boxes hide,
+	// but the collision box stays the same, so the driving does not change.
+	if (CityShapes::AddModel(this, Body, UCityArtSettings::Get().PlayerCar, FVector(0.f, 0.f, -RideHeight), 0.f, CarLength))
+	{
+		BodyMesh->SetVisibility(false);
+		CabinMesh->SetVisibility(false);
+		for (UStaticMeshComponent* Wheel : Wheels)
+		{
+			Wheel->SetVisibility(false);
+		}
 	}
 
 	Body->OnComponentBeginOverlap.AddDynamic(this, &AParkingCar::OnBodyOverlap);

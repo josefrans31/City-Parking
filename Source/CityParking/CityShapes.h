@@ -6,6 +6,8 @@ class AActor;
 class UStaticMesh;
 class UStaticMeshComponent;
 class USceneComponent;
+struct FCitySurface;
+struct FCityVehicleModel;
 
 // How a shape collides with the player's car.
 enum class EShapeCollision : uint8
@@ -17,7 +19,8 @@ enum class EShapeCollision : uint8
 };
 
 // Everything in the game is built from the engine's basic shapes, so the
-// project needs no art files to run. Swap in real models later.
+// project needs no art files to run. Real models and textures picked in
+// Project Settings > City Parking Art replace them (see CityArtSettings).
 namespace CityShapes
 {
 	UStaticMesh* Cube();
@@ -33,4 +36,14 @@ namespace CityShapes
 
 	// Gives a mesh component a flat colour.
 	void Paint(UStaticMeshComponent* Component, const FLinearColor& Color);
+
+	// Adds a downloaded vehicle model, scaled to TargetLengthCm long, with its tyres on
+	// GroundLocation and its nose pointing along Yaw. No collision: keep a hidden box for that.
+	// Returns nullptr if no model is set, so the caller can fall back to boxes.
+	UStaticMeshComponent* AddModel(AActor* Owner, USceneComponent* Parent, const FCityVehicleModel& Model,
+		const FVector& GroundLocation, float Yaw, float TargetLengthCm);
+
+	// Puts a texture on a shape instead of its flat colour, repeating it so it is not stretched.
+	// SizeCm is the shape's full size. Returns false (and changes nothing) if no texture is set.
+	bool ApplySurface(UStaticMeshComponent* Component, const FCitySurface& Surface, const FVector& SizeCm);
 }

@@ -1,5 +1,6 @@
 #include "CityBlockBuilder.h"
 
+#include "CityArtSettings.h"
 #include "CityShapes.h"
 #include "MovingObstacle.h"
 #include "ParkingCar.h"
@@ -7,6 +8,7 @@
 
 #include "Components/BoxComponent.h"
 #include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
 
 namespace
@@ -25,6 +27,19 @@ namespace
 	const FLinearColor Concrete(0.45f, 0.44f, 0.42f);
 	const FLinearColor Paint(0.85f, 0.85f, 0.8f);
 	const FLinearColor Yellow(0.9f, 0.65f, 0.05f);
+
+	// Picks one entry from a list of models or textures, always the same one for the same spot.
+	// It does not use the level's random numbers, so adding art never changes the layout.
+	template <typename T>
+	const T* PickFor(const TArray<T>& List, const FVector& Where)
+	{
+		if (List.Num() == 0)
+		{
+			return nullptr;
+		}
+		const uint32 Hash = HashCombine(GetTypeHash(FMath::RoundToInt(Where.X)), GetTypeHash(FMath::RoundToInt(Where.Y)));
+		return &List[Hash % (uint32)List.Num()];
+	}
 }
 
 ACityBlockBuilder::ACityBlockBuilder()
@@ -282,15 +297,26 @@ void ACityBlockBuilder::BuildGroundAndBuildings(FRandomStream& Rng)
 	const float FarX = OutX + Sidewalk, FarY = OutY + Sidewalk;
 	const FRotator Flat = FRotator::ZeroRotator;
 
+	const UCityArtSettings& Art = UCityArtSettings::Get();
+
 	// Street surface.
-	CityShapes::Add(this, Root, CityShapes::Cube(), FVector(0, 0, -50), FVector(40000, 32000, 100), Flat, Asphalt, EShapeCollision::Solid, TEXT("Ground"));
+	const FVector GroundSize(40000, 32000, 100);
+	CityShapes::ApplySurface(
+		CityShapes::Add(this, Root, CityShapes::Cube(), FVector(0, 0, -50), GroundSize, Flat, Asphalt, EShapeCollision::Solid, TEXT("Ground")),
+		Art.Street, GroundSize);
 
 	// Sidewalks are 15 cm tall, so the curb stops the car.
-	CityShapes::Add(this, Root, CityShapes::Cube(), FVector(0, 0, 7.5f), FVector(2 * InX, 2 * InY, 15), Flat, Concrete, EShapeCollision::Solid, TEXT("Curb"));
-	CityShapes::Add(this, Root, CityShapes::Cube(), FVector(0, -(OutY + FarY) * 0.5f, 7.5f), FVector(2 * FarX, Sidewalk, 15), Flat, Concrete, EShapeCollision::Solid, TEXT("Curb"));
-	CityShapes::Add(this, Root, CityShapes::Cube(), FVector(0,  (OutY + FarY) * 0.5f, 7.5f), FVector(2 * FarX, Sidewalk, 15), Flat, Concrete, EShapeCollision::Solid, TEXT("Curb"));
-	CityShapes::Add(this, Root, CityShapes::Cube(), FVector(-(OutX + FarX) * 0.5f, 0, 7.5f), FVector(Sidewalk, 2 * FarY, 15), Flat, Concrete, EShapeCollision::Solid, TEXT("Curb"));
-	CityShapes::Add(this, Root, CityShapes::Cube(), FVector( (OutX + FarX) * 0.5f, 0, 7.5f), FVector(Sidewalk, 2 * FarY, 15), Flat, Concrete, EShapeCollision::Solid, TEXT("Curb"));
+	auto AddSidewalk = [&](const FVector& Center, const FVector& Size)
+	{
+		CityShapes::ApplySurface(
+			CityShapes::Add(this, Root, CityShapes::Cube(), Center, Size, Flat, Concrete, EShapeCollision::Solid, TEXT("Curb")),
+			Art.Sidewalk, Size);
+	};
+	AddSidewalk(FVector(0, 0, 7.5f), FVector(2 * InX, 2 * InY, 15));
+	AddSidewalk(FVector(0, -(OutY + FarY) * 0.5f, 7.5f), FVector(2 * FarX, Sidewalk, 15));
+	AddSidewalk(FVector(0,  (OutY + FarY) * 0.5f, 7.5f), FVector(2 * FarX, Sidewalk, 15));
+	AddSidewalk(FVector(-(OutX + FarX) * 0.5f, 0, 7.5f), FVector(Sidewalk, 2 * FarY, 15));
+	AddSidewalk(FVector( (OutX + FarX) * 0.5f, 0, 7.5f), FVector(Sidewalk, 2 * FarY, 15));
 
 	static const FLinearColor Facades[] = {
 		FLinearColor(0.42f, 0.17f, 0.11f), // brick
@@ -304,7 +330,12 @@ void ACityBlockBuilder::BuildGroundAndBuildings(FRandomStream& Rng)
 	{
 		const float Height = Rng.FRandRange(1600.f, 6500.f);
 		const FLinearColor Color = Facades[Rng.RandRange(0, (int32)UE_ARRAY_COUNT(Facades) - 1)];
-		CityShapes::Add(this, Root, CityShapes::Cube(), FVector(Center.X, Center.Y, 15 + Height * 0.5f), FVector(Size.X, Size.Y, Height), Flat, Color, EShapeCollision::Solid, TEXT("Building"));
+		const FVector BuildingSize(Size.X, Size.Y, Height);
+		UStaticMeshComponent* Walls = CityShapes::Add(this, Root, CityShapes::Cube(), FVector(Center.X, Center.Y, 15 + Height * 0.5f), BuildingSize, Flat, Color, EShapeCollision::Solid, TEXT("Building"));
+		if (const FCitySurface* Wall = PickFor(Art.BuildingWalls, FVector(Center, 0)))
+		{
+			CityShapes::ApplySurface(Walls, *Wall, BuildingSize);
+		}
 		// Darker shopfront band at street level.
 		CityShapes::Add(this, Root, CityShapes::Cube(), FVector(Center.X, Center.Y, 15 + 200), FVector(Size.X + 20, Size.Y + 20, 400), Flat, Color * 0.35f, EShapeCollision::None);
 	};
@@ -387,7 +418,27 @@ void ACityBlockBuilder::AddCar(const FVector& Pos, float Yaw, const FLinearColor
 	auto At = [&](const FVector& Local) { return Pos + R.RotateVector(Local); };
 	const bool bVan = Length > 500.f;
 
-	CityShapes::Add(this, Root, CityShapes::Cube(), At(FVector(0, 0, 65)), FVector(Length, Width, 70), R, Color, EShapeCollision::SolidNoCamera, TEXT("Car"));
+	UStaticMeshComponent* Collision = CityShapes::Add(this, Root, CityShapes::Cube(), At(FVector(0, 0, 65)), FVector(Length, Width, 70), R, Color, EShapeCollision::SolidNoCamera, TEXT("Car"));
+
+	// A real model if some are picked in Project Settings > City Parking Art. The box stays as
+	// the invisible thing you bump into.
+	const UCityArtSettings& Art = UCityArtSettings::Get();
+	if (const FCityVehicleModel* Model = PickFor(bVan ? Art.Vans : Art.ParkedCars, Pos))
+	{
+		if (CityShapes::AddModel(this, Root, *Model, Pos, Yaw, Length))
+		{
+			if (Collision)
+			{
+				Collision->SetVisibility(false);
+			}
+			if (bHazards)
+			{
+				AddHazards(Pos, R, Length, Width);
+			}
+			return;
+		}
+	}
+
 	if (bVan)
 	{
 		CityShapes::Add(this, Root, CityShapes::Cube(), At(FVector(-60, 0, 170)), FVector(Length - 140, Width, 150), R, Color, EShapeCollision::None);
@@ -407,12 +458,18 @@ void ACityBlockBuilder::AddCar(const FVector& Pos, float Yaw, const FLinearColor
 	}
 	if (bHazards)
 	{
-		// Blinkers on: "I'll just be a minute."
-		for (float Side : { 1.f, -1.f })
-		{
-			CityShapes::Add(this, Root, CityShapes::Cube(), At(FVector(Length * 0.5f, Side * (Width * 0.5f - 15), 80)), FVector(6, 22, 12), R, FLinearColor(1.f, 0.45f, 0.f), EShapeCollision::None);
-			CityShapes::Add(this, Root, CityShapes::Cube(), At(FVector(-Length * 0.5f, Side * (Width * 0.5f - 15), 80)), FVector(6, 22, 12), R, FLinearColor(1.f, 0.45f, 0.f), EShapeCollision::None);
-		}
+		AddHazards(Pos, R, Length, Width);
+	}
+}
+
+void ACityBlockBuilder::AddHazards(const FVector& Pos, const FRotator& R, float Length, float Width)
+{
+	// Blinkers on: "I'll just be a minute."
+	auto At = [&](const FVector& Local) { return Pos + R.RotateVector(Local); };
+	for (float Side : { 1.f, -1.f })
+	{
+		CityShapes::Add(this, Root, CityShapes::Cube(), At(FVector(Length * 0.5f + 3, Side * (Width * 0.5f - 15), 80)), FVector(6, 22, 12), R, FLinearColor(1.f, 0.45f, 0.f), EShapeCollision::None);
+		CityShapes::Add(this, Root, CityShapes::Cube(), At(FVector(-Length * 0.5f - 3, Side * (Width * 0.5f - 15), 80)), FVector(6, 22, 12), R, FLinearColor(1.f, 0.45f, 0.f), EShapeCollision::None);
 	}
 }
 
@@ -433,10 +490,15 @@ void ACityBlockBuilder::AddBus(int32 StreetIndex, float S, bool bMoving, FRandom
 		Rng.FRandRange(4.f, 7.f), Rng.FRandRange(4.f, 6.f), Rng.FRandRange(1.f, 5.f), false, Yaw, TEXT("Bus"));
 
 	const FRotator Flat = FRotator::ZeroRotator;
-	CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(0, 0, 0), FVector(1200, 260, 280), Flat, FLinearColor(0.85f, 0.86f, 0.88f), EShapeCollision::None);
-	CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(0, 0, 40), FVector(1160, 264, 70), Flat, FLinearColor(0.03f, 0.05f, 0.08f), EShapeCollision::None);
-	CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(0, 0, -60), FVector(1204, 264, 25), Flat, FLinearColor(0.05f, 0.25f, 0.7f), EShapeCollision::None);
-	CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(598, 0, 110), FVector(8, 160, 30), Flat, FLinearColor(1.f, 0.6f, 0.f), EShapeCollision::None);
+	// A real bus model if one is picked in Project Settings > City Parking Art, otherwise boxes.
+	// The bus box sits 165 cm above the street.
+	if (!CityShapes::AddModel(Bus, Bus->Box.Get(), UCityArtSettings::Get().Bus, FVector(0, 0, -165), 0.f, 1200.f))
+	{
+		CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(0, 0, 0), FVector(1200, 260, 280), Flat, FLinearColor(0.85f, 0.86f, 0.88f), EShapeCollision::None);
+		CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(0, 0, 40), FVector(1160, 264, 70), Flat, FLinearColor(0.03f, 0.05f, 0.08f), EShapeCollision::None);
+		CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(0, 0, -60), FVector(1204, 264, 25), Flat, FLinearColor(0.05f, 0.25f, 0.7f), EShapeCollision::None);
+		CityShapes::Add(Bus, Bus->Box.Get(), CityShapes::Cube(), FVector(598, 0, 110), FVector(8, 160, 30), Flat, FLinearColor(1.f, 0.6f, 0.f), EShapeCollision::None);
+	}
 
 	// Bus stop sign and shelter on the sidewalk.
 	const FVector Stop = St.ToWorld(S + 400.f, -(CurbT + 90.f), 15.f);
