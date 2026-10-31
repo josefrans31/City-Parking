@@ -197,9 +197,11 @@ void AParkingCar::Tick(float DeltaSeconds)
 	const float SteerInput = bControlEnabled ? FMath::Clamp(ReadAxis(SteerAction), -1.f, 1.f) : 0.f;
 	const bool bHandbrake = !bControlEnabled || ReadAxis(HandbrakeAction) > 0.5f;
 
-	// Steering eases in, and springs back to centre a bit faster.
+	// Steering eases in, and springs back to centre a bit faster. The wheel also turns slower at speed.
 	const bool bReturning = FMath::Abs(SteerInput) < FMath::Abs(Steer);
-	Steer = FMath::FInterpConstantTo(Steer, SteerInput, Dt, bReturning ? SteerSpeed * 1.6f : SteerSpeed);
+	const float SpeedFactor = FMath::Clamp(FMath::Abs(Speed) / MaxForwardSpeed, 0.f, 1.f);
+	const float WheelRate = SteerSpeed * FMath::Lerp(1.f, 0.45f, SpeedFactor);
+	Steer = FMath::FInterpConstantTo(Steer, SteerInput, Dt, bReturning ? WheelRate * 1.8f : WheelRate);
 
 	if (bHandbrake)
 	{
@@ -225,9 +227,22 @@ void AParkingCar::Tick(float DeltaSeconds)
 	Drive(Dt);
 
 	// Front wheels turn with the steering.
-	const FRotator FrontWheel(0.f, Steer * MaxSteerAngle, 90.f);
+	const FRotator FrontWheel(0.f, Steer * CurrentSteerLimit(), 90.f);
 	Wheels[0]->SetRelativeRotation(FrontWheel);
 	Wheels[1]->SetRelativeRotation(FrontWheel);
+}
+
+float AParkingCar::CurrentSteerLimit() const
+{
+	// Turning radius R = Wheelbase / tan(angle), and side force = speed^2 / R.
+	// Keep speed^2 * tan(angle) / Wheelbase under the grip limit.
+	const float V2 = FMath::Square(Speed);
+	if (V2 < 1.f)
+	{
+		return MaxSteerAngle;
+	}
+	const float GripAngle = FMath::RadiansToDegrees(FMath::Atan(MaxSideGrip * Wheelbase / V2));
+	return FMath::Min(MaxSteerAngle, GripAngle);
 }
 
 void AParkingCar::Drive(float Dt)
@@ -235,7 +250,8 @@ void AParkingCar::Drive(float Dt)
 	UWorld* World = GetWorld();
 
 	// 1. Turn, like a real car: the faster you go, the faster you turn. No turning when stopped.
-	const float YawRate = Speed / Wheelbase * FMath::Tan(FMath::DegreesToRadians(Steer * MaxSteerAngle));
+	// The steering limit shrinks with speed, so fast turns are wide and slow turns can be tight.
+	const float YawRate = Speed / Wheelbase * FMath::Tan(FMath::DegreesToRadians(Steer * CurrentSteerLimit()));
 	const float DeltaYaw = FMath::RadiansToDegrees(YawRate * Dt);
 	if (!FMath::IsNearlyZero(DeltaYaw, 0.001f))
 	{
