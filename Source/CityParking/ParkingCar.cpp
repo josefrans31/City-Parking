@@ -1,6 +1,7 @@
 #include "ParkingCar.h"
 
 #include "CityArtSettings.h"
+#include "CityPlayerSettings.h"
 
 #include "CityShapes.h"
 #include "ParkingGameMode.h"
@@ -106,6 +107,7 @@ void AParkingCar::BeginPlay()
 	}
 
 	Body->OnComponentBeginOverlap.AddDynamic(this, &AParkingCar::OnBodyOverlap);
+	ApplyPlayerSettings();
 }
 
 void AParkingCar::BuildInput()
@@ -123,6 +125,11 @@ void AParkingCar::BuildInput()
 	CameraAction = MakeAction(TEXT("IA_Camera"), EInputActionValueType::Boolean);
 	RestartAction = MakeAction(TEXT("IA_Restart"), EInputActionValueType::Boolean);
 	NextAction = MakeAction(TEXT("IA_Next"), EInputActionValueType::Boolean);
+	SettingsAction = MakeAction(TEXT("IA_Settings"), EInputActionValueType::Boolean);
+	MenuUpAction = MakeAction(TEXT("IA_MenuUp"), EInputActionValueType::Boolean);
+	MenuDownAction = MakeAction(TEXT("IA_MenuDown"), EInputActionValueType::Boolean);
+	MenuLeftAction = MakeAction(TEXT("IA_MenuLeft"), EInputActionValueType::Boolean);
+	MenuRightAction = MakeAction(TEXT("IA_MenuRight"), EInputActionValueType::Boolean);
 
 	Mapping = NewObject<UInputMappingContext>(this, TEXT("IMC_Driving"));
 	auto Map = [this](UInputAction* Action, const FKey& Key, bool bNegate = false)
@@ -147,6 +154,15 @@ void AParkingCar::BuildInput()
 	Map(CameraAction, EKeys::C);
 	Map(RestartAction, EKeys::R);
 	Map(NextAction, EKeys::N);
+	Map(SettingsAction, EKeys::Tab);
+	Map(MenuUpAction, EKeys::Up);
+	Map(MenuUpAction, EKeys::W);
+	Map(MenuDownAction, EKeys::Down);
+	Map(MenuDownAction, EKeys::S);
+	Map(MenuLeftAction, EKeys::Left);
+	Map(MenuLeftAction, EKeys::A);
+	Map(MenuRightAction, EKeys::Right);
+	Map(MenuRightAction, EKeys::D);
 
 	// Gamepad
 	Map(ThrottleAction, EKeys::Gamepad_RightTriggerAxis);
@@ -156,6 +172,11 @@ void AParkingCar::BuildInput()
 	Map(CameraAction, EKeys::Gamepad_FaceButton_Top);
 	Map(RestartAction, EKeys::Gamepad_Special_Right);
 	Map(NextAction, EKeys::Gamepad_FaceButton_Right);
+	Map(SettingsAction, EKeys::Gamepad_Special_Left);
+	Map(MenuUpAction, EKeys::Gamepad_DPad_Up);
+	Map(MenuDownAction, EKeys::Gamepad_DPad_Down);
+	Map(MenuLeftAction, EKeys::Gamepad_DPad_Left);
+	Map(MenuRightAction, EKeys::Gamepad_DPad_Right);
 }
 
 void AParkingCar::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -173,6 +194,11 @@ void AParkingCar::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	Input->BindAction(CameraAction, ETriggerEvent::Started, this, &AParkingCar::ToggleCamera);
 	Input->BindAction(RestartAction, ETriggerEvent::Started, this, &AParkingCar::RequestRestart);
 	Input->BindAction(NextAction, ETriggerEvent::Started, this, &AParkingCar::RequestNext);
+	Input->BindAction(SettingsAction, ETriggerEvent::Started, this, &AParkingCar::ToggleSettings);
+	Input->BindAction(MenuUpAction, ETriggerEvent::Started, this, &AParkingCar::MenuUp);
+	Input->BindAction(MenuDownAction, ETriggerEvent::Started, this, &AParkingCar::MenuDown);
+	Input->BindAction(MenuLeftAction, ETriggerEvent::Started, this, &AParkingCar::MenuLeft);
+	Input->BindAction(MenuRightAction, ETriggerEvent::Started, this, &AParkingCar::MenuRight);
 
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
@@ -207,9 +233,11 @@ void AParkingCar::Tick(float DeltaSeconds)
 	const float Dt = FMath::Min(DeltaSeconds, 0.05f);
 	HitCooldown = FMath::Max(0.f, HitCooldown - Dt);
 
-	const float Throttle = bControlEnabled ? ReadAxis(ThrottleAction) : 0.f;
-	const float SteerInput = bControlEnabled ? FMath::Clamp(ReadAxis(SteerAction), -1.f, 1.f) : 0.f;
-	const bool bHandbrake = !bControlEnabled || ReadAxis(HandbrakeAction) > 0.5f;
+	// While the settings menu is open the keys move the menu, and the car holds still.
+	const bool bCanDrive = bControlEnabled && !bSettingsOpen;
+	const float Throttle = bCanDrive ? ReadAxis(ThrottleAction) : 0.f;
+	const float SteerInput = bCanDrive ? FMath::Clamp(ReadAxis(SteerAction), -1.f, 1.f) : 0.f;
+	const bool bHandbrake = !bCanDrive || ReadAxis(HandbrakeAction) > 0.5f;
 
 	// Steering eases in, and springs back to centre a bit faster. The wheel also turns slower at speed.
 	const bool bReturning = FMath::Abs(SteerInput) < FMath::Abs(Steer);
@@ -384,4 +412,54 @@ void AParkingCar::RequestNext()
 	{
 		Game->NextLevel();
 	}
+}
+
+void AParkingCar::ApplyPlayerSettings()
+{
+	UCityPlayerSettings* Settings = UCityPlayerSettings::Get();
+	Settings->Clamp();
+	MaxSteerAngle = Settings->SteeringAngle;
+	SteerSpeed = Settings->SteeringSpeed;
+}
+
+void AParkingCar::ToggleSettings()
+{
+	bSettingsOpen = !bSettingsOpen;
+	if (!bSettingsOpen)
+	{
+		UCityPlayerSettings::Get()->Save();
+	}
+}
+
+void AParkingCar::MenuUp()
+{
+	if (bSettingsOpen)
+	{
+		SettingsRow = (SettingsRow + SettingsRows - 1) % SettingsRows;
+	}
+}
+
+void AParkingCar::MenuDown()
+{
+	if (bSettingsOpen)
+	{
+		SettingsRow = (SettingsRow + 1) % SettingsRows;
+	}
+}
+
+void AParkingCar::MenuChange(int32 Direction)
+{
+	if (!bSettingsOpen)
+	{
+		return;
+	}
+	UCityPlayerSettings* Settings = UCityPlayerSettings::Get();
+	switch (SettingsRow)
+	{
+	case 0: Settings->SteeringAngle += Direction * 1.f; break;
+	case 1: Settings->SteeringSpeed = FMath::RoundToFloat((Settings->SteeringSpeed + Direction * 0.1f) * 10.f) / 10.f; break;
+	default: Settings->ResetToDefaults(); break;
+	}
+	Settings->Clamp();
+	ApplyPlayerSettings();
 }

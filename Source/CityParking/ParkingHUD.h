@@ -4,6 +4,7 @@
 #include "GameFramework/HUD.h"
 #include "ParkingHUD.generated.h"
 
+class AParkingCar;
 class AParkingGameMode;
 
 // Draws everything on screen with plain shapes and text, no UI assets needed:
@@ -25,4 +26,5 @@ private:
 	void DrawArrowToSpot(AParkingGameMode* Game);
 	void DrawMiniMap(AParkingGameMode* Game);
 	void DrawEndCard(AParkingGameMode* Game);
+	void DrawSettings(AParkingCar* Car);
 };

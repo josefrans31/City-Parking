@@ -44,6 +44,7 @@ again (it rebuilds), or press the **Live Coding** button (Ctrl+Alt+F11) while it
 | C | Y | Switch between chase camera and high camera (good for parking) |
 | R | Menu | Restart the level |
 | N | B | Next level (after you park) |
+| Tab | View (left small button) | Settings: change how far and how fast the car steers |
 
 - Follow the one-way arrows. Driving forward against them costs points ("WRONG WAY!").
   Backing up into a space is fine.
