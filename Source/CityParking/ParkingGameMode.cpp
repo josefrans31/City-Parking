@@ -137,9 +137,9 @@ void AParkingGameMode::Tick(float DeltaSeconds)
 	}
 
 	AParkingCar* Car = GetCar();
-	if (State != EParkingState::Driving || !Car || !City)
+	if (State != EParkingState::Driving || !Car || !City || Car->IsSettingsOpen())
 	{
-		return;
+		return; // the clock also stops while the settings menu is open
 	}
 
 	TimeLeft -= DeltaSeconds;

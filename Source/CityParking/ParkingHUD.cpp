@@ -1,6 +1,7 @@
 #include "ParkingHUD.h"
 
 #include "CityBlockBuilder.h"
+#include "CityPlayerSettings.h"
 #include "ParkingCar.h"
 #include "ParkingGameMode.h"
 #include "ParkingSpot.h"
@@ -102,12 +103,64 @@ void AParkingHUD::DrawHUD()
 	// Bottom centre: controls.
 	if (Game->State == EParkingState::Driving)
 	{
-		Text(TEXT("W/S drive & reverse   A/D steer   SPACE brake   C camera   R restart"), W * 0.5f, H - 40 * UI, Grey, 0.8f, true);
+		Text(TEXT("W/S drive & reverse   A/D steer   SPACE brake   C camera   R restart   TAB settings"), W * 0.5f, H - 40 * UI, Grey, 0.8f, true);
 	}
 	else
 	{
 		DrawEndCard(Game);
 	}
+
+	if (AParkingCar* Car = Game->GetCar())
+	{
+		if (Car->IsSettingsOpen())
+		{
+			DrawSettings(Car);
+		}
+	}
+}
+
+void AParkingHUD::DrawSettings(AParkingCar* Car)
+{
+	const UCityPlayerSettings* S = UCityPlayerSettings::Get();
+	const float CX = Canvas->ClipX * 0.5f;
+	const float PW = 640 * UI, PH = 360 * UI;
+	const float X = CX - PW * 0.5f, Y = Canvas->ClipY * 0.5f - PH * 0.5f;
+
+	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.8f), X, Y, PW, PH);
+	Text(TEXT("SETTINGS"), CX, Y + 18 * UI, Yellow, 1.6f, true);
+
+	struct FRow { FString Label; FString Value; float Fill; FString Hint; };
+	const FRow Rows[AParkingCar::SettingsRows] = {
+		{ TEXT("Steering amount"), FString::Printf(TEXT("%.0f deg"), S->SteeringAngle),
+		  (S->SteeringAngle - UCityPlayerSettings::MinAngle) / (UCityPlayerSettings::MaxAngle - UCityPlayerSettings::MinAngle),
+		  TEXT("How far the wheels turn. Higher = tighter turns.") },
+		{ TEXT("Steering speed"), FString::Printf(TEXT("%.1f"), S->SteeringSpeed),
+		  (S->SteeringSpeed - UCityPlayerSettings::MinSpeed) / (UCityPlayerSettings::MaxSpeed - UCityPlayerSettings::MinSpeed),
+		  TEXT("How quickly the wheel turns when you press A or D.") },
+		{ TEXT("Reset to default"), TEXT(""), -1.f, TEXT("Press left or right to reset.") },
+	};
+
+	float RowY = Y + 80 * UI;
+	for (int32 i = 0; i < AParkingCar::SettingsRows; ++i)
+	{
+		const bool bSel = Car->GetSettingsRow() == i;
+		if (bSel)
+		{
+			DrawRect(FLinearColor(1.f, 1.f, 1.f, 0.12f), X + 16 * UI, RowY - 6 * UI, PW - 32 * UI, 70 * UI);
+		}
+		Text((bSel ? TEXT("> ") : TEXT("  ")) + Rows[i].Label, X + 30 * UI, RowY, bSel ? White : Grey, 1.1f);
+		if (Rows[i].Fill >= 0.f)
+		{
+			Bar(X + 330 * UI, RowY + 8 * UI, 200 * UI, 16 * UI, Rows[i].Fill, bSel ? Green : Grey);
+			Text(Rows[i].Value, X + 545 * UI, RowY, White, 1.1f);
+		}
+		if (bSel)
+		{
+			Text(Rows[i].Hint, X + 50 * UI, RowY + 34 * UI, Grey, 0.75f);
+		}
+		RowY += 80 * UI;
+	}
+	Text(TEXT("W/S choose    A/D change    TAB close"), CX, Y + PH - 40 * UI, Grey, 0.85f, true);
 }
 
 void AParkingHUD::DrawArrowToSpot(AParkingGameMode* Game)

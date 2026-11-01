@@ -51,6 +51,11 @@ public:
 	float CurrentSteerLimit() const;
 	void SetControlEnabled(bool bEnabled) { bControlEnabled = bEnabled; }
 
+	// The in-game settings menu (TAB). The HUD draws it; the car handles the keys.
+	bool IsSettingsOpen() const { return bSettingsOpen; }
+	int32 GetSettingsRow() const { return SettingsRow; }
+	static constexpr int32 SettingsRows = 3; // steering angle, steering speed, reset
+
 	UPROPERTY(VisibleAnywhere, Category = "Car") TObjectPtr<UBoxComponent> Body;
 	UPROPERTY(VisibleAnywhere, Category = "Car") TObjectPtr<UStaticMeshComponent> BodyMesh;
 	UPROPERTY(VisibleAnywhere, Category = "Car") TObjectPtr<UStaticMeshComponent> CabinMesh;
@@ -65,6 +70,8 @@ private:
 	float FixedZ = RideHeight;
 	bool bControlEnabled = true;
 	bool bTopView = false;
+	bool bSettingsOpen = false;
+	int32 SettingsRow = 0;
 
 	UPROPERTY() TObjectPtr<UInputMappingContext> Mapping;
 	UPROPERTY() TObjectPtr<UInputAction> ThrottleAction;
@@ -73,6 +80,11 @@ private:
 	UPROPERTY() TObjectPtr<UInputAction> CameraAction;
 	UPROPERTY() TObjectPtr<UInputAction> RestartAction;
 	UPROPERTY() TObjectPtr<UInputAction> NextAction;
+	UPROPERTY() TObjectPtr<UInputAction> SettingsAction;
+	UPROPERTY() TObjectPtr<UInputAction> MenuUpAction;
+	UPROPERTY() TObjectPtr<UInputAction> MenuDownAction;
+	UPROPERTY() TObjectPtr<UInputAction> MenuLeftAction;
+	UPROPERTY() TObjectPtr<UInputAction> MenuRightAction;
 
 	void BuildInput();
 	float ReadAxis(const UInputAction* Action) const;
@@ -82,6 +94,14 @@ private:
 	void ToggleCamera();
 	void RequestRestart();
 	void RequestNext();
+
+	void ApplyPlayerSettings();
+	void ToggleSettings();
+	void MenuUp();
+	void MenuDown();
+	void MenuLeft() { MenuChange(-1); }
+	void MenuRight() { MenuChange(1); }
+	void MenuChange(int32 Direction);
 
 	UFUNCTION()
 	void OnBodyOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
