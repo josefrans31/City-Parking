@@ -129,6 +129,62 @@ UStaticMeshComponent* CityShapes::AddModel(AActor* Owner, USceneComponent* Paren
 	return C;
 }
 
+UStaticMeshComponent* CityShapes::AddBuilding(AActor* Owner, USceneComponent* Parent, const FCityBuildingModel& Model,
+	const FVector& GroundLocation, const FVector2D& SpotSizeCm, float FrontYaw)
+{
+	if (!Owner || Model.Mesh.IsNull())
+	{
+		return nullptr;
+	}
+	UStaticMesh* Mesh = Model.Mesh.LoadSynchronous();
+	if (!Mesh)
+	{
+		return nullptr;
+	}
+	const FBox Bounds = Mesh->GetBoundingBox();
+	const FVector Size = Bounds.GetSize();
+	if (Size.X < 1.f || Size.Y < 1.f || Size.Z < 1.f)
+	{
+		return nullptr;
+	}
+
+	// Turns are always in steps of 90 degrees, so the model's sides line up with the street.
+	const int32 Quarters = FMath::RoundToInt(FrontYaw / 90.f) + (int32)Model.Turn;
+	const bool bSideways = (Quarters % 2) != 0;
+	const FRotator Rot(0.f, Quarters * 90.f, 0.f);
+
+	// How much room the model's own X and Y sides get, once it is turned.
+	const double RoomX = bSideways ? SpotSizeCm.Y : SpotSizeCm.X;
+	const double RoomY = bSideways ? SpotSizeCm.X : SpotSizeCm.Y;
+	FVector Scale;
+	if (Model.bFillTheSpot)
+	{
+		const double SX = RoomX / Size.X, SY = RoomY / Size.Y;
+		Scale = FVector(SX, SY, (SX + SY) * 0.5f);
+	}
+	else
+	{
+		Scale = FVector(FMath::Min(RoomX / Size.X, RoomY / Size.Y));
+	}
+
+	// Put the middle of the model's footprint, and its bottom, on GroundLocation.
+	const FVector Pivot(Bounds.GetCenter().X, Bounds.GetCenter().Y, Bounds.Min.Z);
+	const FVector Location = GroundLocation - Rot.RotateVector(Pivot * Scale) + FVector(0.f, 0.f, Model.RaiseBy);
+
+	UStaticMeshComponent* C = NewObject<UStaticMeshComponent>(Owner);
+	C->SetStaticMesh(Mesh);
+	C->SetMobility(EComponentMobility::Movable);
+	C->SetupAttachment(Parent ? Parent : Owner->GetRootComponent());
+	C->SetRelativeLocationAndRotation(Location, Rot);
+	C->SetRelativeScale3D(Scale);
+	C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	C->SetGenerateOverlapEvents(false);
+	C->SetCanEverAffectNavigation(false);
+	C->RegisterComponent();
+	Owner->AddInstanceComponent(C);
+	return C;
+}
+
 bool CityShapes::ApplySurface(UStaticMeshComponent* Component, const FCitySurface& Surface, const FVector& SizeCm)
 {
 	if (!Component || Surface.Material.IsNull())

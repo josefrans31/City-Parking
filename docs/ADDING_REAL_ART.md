@@ -50,6 +50,19 @@ Megascans surfaces are free on Fab for Unreal projects.
    - **Building Walls**: click **+** for each wall material.
 4. Settings save by themselves. Press **Play**.
 
+## 4b. Real buildings (optional)
+
+You can swap the box buildings for real ones, for example from a free city pack on Fab.
+
+1. Download the pack as **GLB** (or FBX). In the Content Drawer make a folder `Content/City` and drag
+   the file in. In the import window, open the **Static Meshes** tab and pick
+   **Do Not Combine Static Meshes**, so every building comes in as its own piece.
+2. **Edit > Project Settings > Game > City Parking Art > Buildings**: click **+** once per building
+   and pick a building mesh in each. 4 to 8 different buildings is plenty.
+3. Press **Play**. Each spot along the street picks a building and sizes it to fit.
+
+You still bump into the same walls as before, so the streets and parking do not change.
+
 ## 5. If something looks off
 
 | What you see | What to do |
@@ -58,7 +71,10 @@ Megascans surfaces are free on Fab for Unreal projects.
 | Tyres float or sink into the street | Change **Raise By** (cm). Negative moves it down. |
 | A texture looks stretched or blurry | Make **Tile Size Cm** smaller (try 200). If nothing changes, open the `MI_` material, find the setting that controls repeats (often *Tiling*), and type its exact name into **Tiling Parameter Name**. |
 | Only the car body shows, no wheels | The model came in pieces. Pick a one-piece model, or tell Claude. |
-| It runs slowly | Use fewer car models, pick Low texture quality, or empty the Building Walls list. |
+| A building shows its back to the street | Change **Turn** for that building (try 180 degrees). |
+| Buildings leave big gaps | Tick **Fill The Spot** for that building. |
+| A building floats or sinks | Change **Raise By** (cm). |
+| It runs slowly | Use fewer car models, pick Low texture quality, or use fewer buildings in the Buildings list. |
 
 Models are resized to the game's sizes (cars 4.5 m, vans 6 m, the bus 12 m), so you do not need to
 scale them. You still bump into the same invisible boxes as before, so the driving and scoring do not

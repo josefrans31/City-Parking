@@ -8,6 +8,7 @@ class UStaticMeshComponent;
 class USceneComponent;
 struct FCitySurface;
 struct FCityVehicleModel;
+struct FCityBuildingModel;
 
 // How a shape collides with the player's car.
 enum class EShapeCollision : uint8
@@ -42,6 +43,12 @@ namespace CityShapes
 	// Returns nullptr if no model is set, so the caller can fall back to boxes.
 	UStaticMeshComponent* AddModel(AActor* Owner, USceneComponent* Parent, const FCityVehicleModel& Model,
 		const FVector& GroundLocation, float Yaw, float TargetLengthCm);
+
+	// Adds a downloaded building, sized to fit a spot of SpotSizeCm (X by Y), standing on
+	// GroundLocation with its front (the model's +X side) facing FrontYaw. No collision.
+	// Returns nullptr if no model is set, so the caller can keep the box building.
+	UStaticMeshComponent* AddBuilding(AActor* Owner, USceneComponent* Parent, const FCityBuildingModel& Model,
+		const FVector& GroundLocation, const FVector2D& SpotSizeCm, float FrontYaw);
 
 	// Puts a texture on a shape instead of its flat colour, repeating it so it is not stretched.
 	// SizeCm is the shape's full size. Returns false (and changes nothing) if no texture is set.
