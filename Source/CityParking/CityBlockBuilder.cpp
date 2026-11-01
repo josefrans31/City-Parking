@@ -326,12 +326,28 @@ void ACityBlockBuilder::BuildGroundAndBuildings(FRandomStream& Rng)
 		FLinearColor(0.25f, 0.32f, 0.40f), // glass
 		FLinearColor(0.33f, 0.33f, 0.35f), // grey
 	};
-	auto AddBuilding = [&](const FVector2D& Center, const FVector2D& Size)
+	// FrontYaw is the way to the street: 0 = +X, 90 = +Y, 180 = -X, -90 = -Y.
+	auto AddBuilding = [&](const FVector2D& Center, const FVector2D& Size, float FrontYaw)
 	{
 		const float Height = Rng.FRandRange(1600.f, 6500.f);
 		const FLinearColor Color = Facades[Rng.RandRange(0, (int32)UE_ARRAY_COUNT(Facades) - 1)];
 		const FVector BuildingSize(Size.X, Size.Y, Height);
 		UStaticMeshComponent* Walls = CityShapes::Add(this, Root, CityShapes::Cube(), FVector(Center.X, Center.Y, 15 + Height * 0.5f), BuildingSize, Flat, Color, EShapeCollision::Solid, TEXT("Building"));
+
+		// A real building if some are picked in Project Settings > City Parking Art. The box
+		// stays as the invisible wall you bump into.
+		if (const FCityBuildingModel* Model = PickFor(Art.Buildings, FVector(Center, 0)))
+		{
+			if (CityShapes::AddBuilding(this, Root, *Model, FVector(Center.X, Center.Y, 15), Size, FrontYaw))
+			{
+				if (Walls)
+				{
+					Walls->SetVisibility(false);
+				}
+				return;
+			}
+		}
+
 		if (const FCitySurface* Wall = PickFor(Art.BuildingWalls, FVector(Center, 0)))
 		{
 			CityShapes::ApplySurface(Walls, *Wall, BuildingSize);
@@ -345,7 +361,7 @@ void ACityBlockBuilder::BuildGroundAndBuildings(FRandomStream& Rng)
 	const float W = 2 * BlockX / Inner;
 	for (int32 b = 0; b < Inner; ++b)
 	{
-		AddBuilding(FVector2D(-BlockX + W * (b + 0.5f), 0), FVector2D(W - 30, 2 * BlockY));
+		AddBuilding(FVector2D(-BlockX + W * (b + 0.5f), 0), FVector2D(W - 30, 2 * BlockY), b % 2 == 0 ? -90.f : 90.f);
 	}
 
 	// The blocks all around the outside.
@@ -355,15 +371,15 @@ void ACityBlockBuilder::BuildGroundAndBuildings(FRandomStream& Rng)
 	for (int32 b = 0; b < Row; ++b)
 	{
 		const float X = -FarX - Depth + RowW * (b + 0.5f);
-		AddBuilding(FVector2D(X, -FarY - Depth * 0.5f), FVector2D(RowW - 30, Depth));
-		AddBuilding(FVector2D(X,  FarY + Depth * 0.5f), FVector2D(RowW - 30, Depth));
+		AddBuilding(FVector2D(X, -FarY - Depth * 0.5f), FVector2D(RowW - 30, Depth), 90.f);
+		AddBuilding(FVector2D(X,  FarY + Depth * 0.5f), FVector2D(RowW - 30, Depth), -90.f);
 	}
 	for (int32 b = 0; b < 3; ++b)
 	{
 		const float H = 2 * FarY / 3;
 		const float Y = -FarY + H * (b + 0.5f);
-		AddBuilding(FVector2D(-FarX - Depth * 0.5f, Y), FVector2D(Depth, H - 30));
-		AddBuilding(FVector2D( FarX + Depth * 0.5f, Y), FVector2D(Depth, H - 30));
+		AddBuilding(FVector2D(-FarX - Depth * 0.5f, Y), FVector2D(Depth, H - 30), 0.f);
+		AddBuilding(FVector2D( FarX + Depth * 0.5f, Y), FVector2D(Depth, H - 30), 180.f);
 	}
 }
 
